@@ -1,9 +1,12 @@
+from pprint import pprint
+
 import requests
 import json
 import time
 import os
 import sys
 import colorama
+import sqlite3
 
 
 class Network:
@@ -35,7 +38,8 @@ class Network:
         # Declare empty variables for population
         hoards_raw_json = ""
         hoards_json_end = 0
-        user_ids = []
+        owner_ids = []
+        owner_names = []
 
         for char_location in range(len(raw_data)):
             if raw_data[char_location + hoards_json_start] == "}":
@@ -48,9 +52,12 @@ class Network:
         hoards_json = json.loads(hoards_raw_json)
 
         for user_id in hoards_json["owner_ids"]:
-            user_ids.append(user_id)
+            owner_ids.append(user_id)
 
-        return user_ids
+        for user_id in hoards_json["owner_names"]:
+            owner_names.append(user_id)
+
+        return [owner_ids, owner_names]
 
     @staticmethod
     def parse_owners(raw_data):
@@ -63,7 +70,11 @@ class Network:
         # Declare empty variables for population
         bc_copies_raw_json = ""
         bc_copies_json_end = 0
-        user_ids = []
+        owner_ids = []
+        owner_names = []
+        owner_last_online_dates = []
+        owner_obtain_dates = []
+        owner_can_message = []
 
         for char_location in range(len(raw_data)):
             # LMAO THIS IS BAD-
@@ -78,9 +89,20 @@ class Network:
         bc_copies_json = json.loads(bc_copies_raw_json)
 
         for user_id in bc_copies_json["owner_ids"]:
-            user_ids.append(user_id)
+            owner_ids.append(user_id)
+            owner_can_message.append(Network.can_message(user_id))
 
-        return user_ids
+        for owner_name in bc_copies_json["owner_names"]:
+            owner_names.append(owner_name)
+
+        for obtain_date in bc_copies_json["bc_updated"]:
+            owner_obtain_dates.append(obtain_date)
+
+        for last_online_date in bc_copies_json["bc_last_online"]:
+            owner_last_online_dates.append(last_online_date)
+
+        #print(owner_obtain_dates)
+        return [owner_ids, owner_names, owner_obtain_dates, owner_last_online_dates, owner_can_message]
 
     # Return the name of all items returned by the API
     @staticmethod
@@ -116,12 +138,70 @@ class Network:
     def pull_item_owners(parsed_data):
         pass
 
+    @staticmethod
+    def can_message(user_id):
+        # url = f"https://privatemessages.roblox.com/v1/messages/{user_id}/can-message"
+
+        # headers = {
+        #     "cookie": cookie here <3
+        # }
+
+        # can_message = None
+        # while can_message is None:
+        #     try:
+        #         response = requests.get(url, headers=headers)
+        #         parsed_data = json.loads(response.text)
+        #         can_message = parsed_data["canMessage"]
+        #     except KeyError:
+        #         print(f"Rate Limit - Retrying (can-message) [{user_id}]")
+        #         time.sleep(10)
+        #
+        # return can_message
+        return False
+
 
 class Local:
-    pass
+
+    @staticmethod
+    def open_database():
+        database = sqlite3.connect('item_data.db')
+        print("Connected to SQL DB")
+        return database
+
+    @staticmethod
+    def init_table(database, table):
+        try:
+            database.execute(f" \
+            CREATE TABLE `{table}` ( \
+            USER_ID INT, \
+            USERNAME TEXT, \
+            OWNED_SINCE INT, \
+            LAST_ONLINE INT, \
+            CAN_MESSAGE TEXT \
+            ) \
+            ")
+
+            # print(f'Table {table} Initialized Successfully')
+
+        except sqlite3.OperationalError:
+            print('Table Already Exists')
+
+    @staticmethod
+    def append_database(database, user_data, table, user_index):
+        params = (user_data[0][user_index], user_data[1][user_index], user_data[2][user_index],
+                  user_data[3][user_index], user_data[4][user_index])
+
+        database.execute(f"\
+        INSERT INTO `{table}` (USER_ID, USERNAME, OWNED_SINCE, LAST_ONLINE, CAN_MESSAGE)\
+        VALUES (?, ?, ?, ?, ?)\
+        ", params)
+
+    @staticmethod
+    def commit_database(database):
+        database.commit()
 
 
-# Provider agnostic interface for retrieving data in memory
+# Provider agnostic interface for retrieving stored data
 class Data:
     pass
 
@@ -213,6 +293,7 @@ class UI:
 
 # Temporary hack
 def pull_everything():
+    database = Local.open_database()
     print("Pulling item IDs...")
     parsed_data = Network.pull_item_meta()
     item_ids = Network.parse_item_ids(parsed_data)
@@ -220,23 +301,33 @@ def pull_everything():
     print("Successfully pulled " + str(len(item_ids)) + " item IDs!")
     print("-" * 20)
     time.sleep(0.1)
-    for item_index in range(len(item_ids)):
+    for item_index in range(100):
         string = "Dumping user IDs for item " + item_names[item_index] + " (" + item_ids[item_index] + ")"
         print(string, end="")
         print(" " * (100 - len(string)), end="")
         print(" | " + str(item_index + 1) + " out of " + str(len(item_ids)))
 
-        user_ids = None
-        while user_ids is None:
+        user_data = None
+
+        while not user_data:
             try:
                 item_data = Network.pull_item_data(item_ids[item_index])
-                user_ids = Network.parse_owners(item_data)
+                user_data = Network.parse_owners(item_data)
             except IndexError:
                 print("Rate Limit - Retrying")
                 time.sleep(10)
+        # user_ids = None
+        # while user_ids is None:
+        #     try:
+        #         item_data = Network.pull_item_data(item_ids[item_index])
+        #         user_data = Network.parse_owners(item_data)
+        #     except IndexError:
+        #         print("Rate Limit - Retrying")
+        #         time.sleep(10)
 
-        with open("item_data/" + item_ids[item_index] + " - " + item_names[item_index].replace(":", " ").replace("?",
-                                                                                                                 " "),
-                  'a') as file:
-            for user_id in user_ids:
-                file.write(str(user_id) + "\n")
+        Local.init_table(database, table=item_ids[item_index])
+
+        for user_id in range(len(user_data[0])):
+            Local.append_database(database, user_data=user_data, table=int(item_ids[item_index]), user_index=user_id)
+
+        Local.commit_database(database)
