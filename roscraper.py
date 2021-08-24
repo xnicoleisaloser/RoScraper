@@ -101,7 +101,7 @@ class Network:
         for last_online_date in bc_copies_json["bc_last_online"]:
             owner_last_online_dates.append(last_online_date)
 
-        #print(owner_obtain_dates)
+        # print(owner_obtain_dates)
         return [owner_ids, owner_names, owner_obtain_dates, owner_last_online_dates, owner_can_message]
 
     # Return the name of all items returned by the API
@@ -283,12 +283,14 @@ class UI:
 
     @staticmethod
     def clear_top_line():
-        sys.stdout.write("\033[A")
-        sys.stdout.flush()
-        for i in range(100):
-            sys.stdout.write(" ")
-            sys.stdout.flush()
-            time.sleep(0.01)
+        os.system("cls")
+
+        # sys.stdout.write("\033[A")
+        # sys.stdout.flush()
+        # for i in range(100):
+        #     sys.stdout.write(" ")
+        #     sys.stdout.flush()
+        #     time.sleep(0.01)
 
 
 # Temporary hack
