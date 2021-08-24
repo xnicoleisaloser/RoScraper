@@ -1,13 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 
 app = FastAPI()
 
 
 @app.get('/')
 def root():
-    return 'RoScraper NMS v0.1'
+    return Response('Success')
 
 
 @app.get('/ping')
 def ping():
-    return 'Success'
+    return Response('Success')
+
+
+@app.get('/instructions')
+def instructions():
+    return Response('Success')
