@@ -18,7 +18,7 @@ class Client:
             ("Disconnect", None, Client.disconnect)
         )
 
-        systray = SysTrayIcon(icon='image.ico', hover_text='RoScraper Node', menu_options=menu_options)
+        systray = SysTrayIcon(icon=config.resource_dir + 'default.ico', hover_text='RoScraper Node', menu_options=menu_options)
         connection_thread = threading.Thread(target=Client.connection, args=(1, systray))
         connection_thread.start()
         systray.start()
@@ -36,11 +36,11 @@ class Client:
                 try:
                     requests.get(config.server + 'ping')
                     print("Connection Successful")
-                    systray.update(icon='connected.ico')
+                    systray.update(icon=config.resource_dir + 'connected.ico')
 
                 except:
                     print("Connection Error")
-                    systray.update(icon='disconnected.ico')
+                    systray.update(icon=config.resource_dir + 'disconnected.ico')
 
             time.sleep(config.online_check_delay)
 
@@ -49,11 +49,11 @@ class Client:
         global should_connect
         should_connect = True
         print('Connecting')
-        systray.update(icon='default.ico')
+        systray.update(icon=config.resource_dir + 'default.ico')
 
     @staticmethod
     def disconnect(systray):
         global should_connect
         should_connect = False
         print('Disconnected')
-        systray.update(icon='disconnected.ico')
+        systray.update(icon=config.resource_dir + 'disconnected.ico')
