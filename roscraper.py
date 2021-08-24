@@ -301,8 +301,8 @@ def pull_everything():
     print("Successfully pulled " + str(len(item_ids)) + " item IDs!")
     print("-" * 20)
     time.sleep(0.1)
-    for item_index in range(100):
-        string = "Dumping user IDs for item " + item_names[item_index] + " (" + item_ids[item_index] + ")"
+    for item_index in range(len(item_ids)):
+        string = "Dumping user IDs for ite  m " + item_names[item_index] + " (" + item_ids[item_index] + ")"
         print(string, end="")
         print(" " * (100 - len(string)), end="")
         print(" | " + str(item_index + 1) + " out of " + str(len(item_ids)))
