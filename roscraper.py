@@ -328,14 +328,6 @@ def pull_everything():
             except IndexError:
                 print("Rate Limit - Retrying")
                 time.sleep(10)
-        # user_ids = None
-        # while user_ids is None:
-        #     try:
-        #         item_data = Network.pull_item_data(item_ids[item_index])
-        #         user_data = Network.parse_owners(item_data)
-        #     except IndexError:
-        #         print("Rate Limit - Retrying")
-        #         time.sleep(10)
 
         Local.init_table(database, table=item_ids[item_index])
 
