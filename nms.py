@@ -57,7 +57,7 @@ def command_response(response: str):
 # Admin endpoints start here
 # (these are scary, don't allow access to these without an admin UUID)
 
-@app.get('/admin/send_command/<{uuid}>{response}')
+@app.get('/admin/send_command/<{admin_uuid}>{response}')
 def admin_send_command(admin_uuid: str, requested_command: str):
     if admin_uuid in admin_uuids:
         requested_command = encode(requested_command)
@@ -67,7 +67,7 @@ def admin_send_command(admin_uuid: str, requested_command: str):
         return Response('Admin UUID Required')
 
 
-@app.get('/admin/view_command_output/<{uuid}>{response}')
+@app.get('/admin/view_command_output/<{admin_uuid}>{response}')
 def admin_view_command_output(admin_uuid: str, response: str):
     if admin_uuid in admin_uuids:
         command_output = encode(command_response_list[0])
