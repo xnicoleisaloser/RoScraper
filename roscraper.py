@@ -11,6 +11,9 @@ import sqlite3
 
 class Network:
 
+    def __init__(self):
+        pass
+
     # Returns un-formatted item meta-data from the Rolimons API
     @staticmethod
     def pull_item_meta():
@@ -162,6 +165,9 @@ class Network:
 
 class Local:
 
+    def __init__(self):
+        pass
+
     @staticmethod
     def open_database():
         database = sqlite3.connect('item_data.db')
@@ -203,10 +209,14 @@ class Local:
 
 # Provider agnostic interface for retrieving stored data
 class Data:
-    pass
+    def __init__(self):
+        pass
 
 
 class UI:
+
+    def __init__(self):
+        pass
 
     # Please end me this code is beyond cursed
     @staticmethod
@@ -318,14 +328,6 @@ def pull_everything():
             except IndexError:
                 print("Rate Limit - Retrying")
                 time.sleep(10)
-        # user_ids = None
-        # while user_ids is None:
-        #     try:
-        #         item_data = Network.pull_item_data(item_ids[item_index])
-        #         user_data = Network.parse_owners(item_data)
-        #     except IndexError:
-        #         print("Rate Limit - Retrying")
-        #         time.sleep(10)
 
         Local.init_table(database, table=item_ids[item_index])
 
