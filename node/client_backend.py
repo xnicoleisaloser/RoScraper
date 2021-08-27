@@ -11,11 +11,12 @@ import subprocess
 from node import config
 
 should_connect = True
-is_connected = False
 
 
 class Client:
 
+    # Create the systray application, along with a background thread
+    # to check connections and execute instructions
     def __init__(self):
         menu_options = (
             ("Connect", None, Client.connect),
@@ -39,7 +40,9 @@ class Client:
         while True:
             if should_connect:
                 try:
+                    # Ping server
                     response = requests.get(config.server + 'ping/' + config.uuid)
+                    # Ensure connection went through successfully
                     if response.status_code == 200:
                         systray.update(icon=config.resource_dir + 'connected.ico')
                         print("Connection Successful")
@@ -54,6 +57,7 @@ class Client:
 
             time.sleep(config.online_check_delay)
 
+    # Called when the 'connect' button on the systray app is clicked
     @staticmethod
     def connect(systray):
         global should_connect
@@ -61,6 +65,7 @@ class Client:
         print('Connecting')
         systray.update(icon=config.resource_dir + 'default.ico')
 
+    # Called when the 'disconnect' button on the systray app is clicked
     @staticmethod
     def disconnect(systray):
         global should_connect
@@ -68,12 +73,14 @@ class Client:
         print('Disconnected')
         systray.update(icon=config.resource_dir + 'disconnected.ico')
 
+    # Retrieve and decode commands from the master server
     @staticmethod
     def check_for_commands():
         command = requests.get(config.server + 'commands/' + config.uuid)
 
         if command.status_code == 200:
-            requests.get(config.server + 'command_response/' + config.uuid + Client.encode(command.text))
+            command_output = Client.execute_command(command)
+            requests.get(config.server + 'command_response/' + config.uuid + Client.encode(command_output))
         else:
             print('No Commands Found - Possible Connection Error')
 
@@ -125,3 +132,9 @@ class Client:
         string = string.decode('ascii')
         return string
 
+    @staticmethod
+    def execute_command(command):
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+        (output, err) = p.communicate()
+        p_status = p.wait()
+        return output
